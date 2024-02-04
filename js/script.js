@@ -1,39 +1,56 @@
 // const axios = require('axios');
 
 const citys = ['القاهرة', 'الشرقية', 'الجيزة', 'الدقهلية', 'الغربية'];
-const dayOfMonth = new Date().getDate();
+const timingAr = ['الفجر', 'الظهر', 'العصر', 'المغرب', 'العشاء'];
+const timingEn = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
 const times = document.querySelector('.times');
-let selections = document.querySelector('.selection');
+const selections = document.querySelector('.selection');
+const title = document.querySelector('.title');
+
 citys.forEach((city) => {
-  selections.innerHTML += `<option class="city" value=${city} >${city}</option>`;
+  selections.innerHTML += `<option class="city">${city}</option>`;
 });
+
+title.innerHTML = selections.value;
 
 selections.addEventListener('change', () => {
-  const month = new Date().getMonth();
-  document.querySelector('.title').innerHTML = selections.value;
-  getCityTime(selections.value, month);
+  title.innerHTML = selections.value;
+  getCityTime(selections.value);
 });
 
-getCityTime = (city, month) => {
+getCityTime = (city) => {
   axios
-    .get(`http://api.aladhan.com/v1/calendarByCity/2024/${month}?city=${city}&country=egypt&method=5`)
+    .get(`http://api.aladhan.com/v1/timingsByCity?city=${city}&country=Egypt&method=5`)
     .then((res) => {
-      const timing = res.data.data[dayOfMonth - 1].timings;
-      const keysOfTiming = Object.keys(res.data.data[dayOfMonth - 1].timings);
-      console.log(timing);
+      const dataResponse = res.data.data;
+      const timing = dataResponse.timings;
+
+      const timingPray = {
+        fajr: castingTime(timing.Fajr),
+        dhuhr: castingTime(timing.Dhuhr),
+        asr: castingTime(timing.Asr),
+        maghrib: castingTime(timing.Maghrib),
+        isha: castingTime(timing.Isha),
+      };
+
       times.innerHTML = '';
-      keysOfTiming.forEach((item) => {
+      timingAr.forEach((item, idx) => {
         times.innerHTML += `
         <div class="time-item  ">
           <h3 class="time-title fs-4">${item}</h3>
-          <p class="time">${timing[item].slice(0, 5)}</p>
+          <p class="time">${timingPray[timingEn[idx]]}</p>
         </div>
       `;
       });
+      document.querySelector('.day').innerHTML = dataResponse.date.hijri.weekday.ar + ' : ' + dataResponse.date.gregorian.date;
     })
     .catch((error) => console.log(error));
-  console.log();
 };
-document.querySelector('.title').innerHTML = selections.value;
-document.querySelector('.day').innerHTML = new Date().toLocaleDateString();
-getCityTime('القاهرة', 2);
+getCityTime(citys[0]);
+
+const castingTime = (d) => {
+  let time = Number(d.slice(0, 2));
+  if (time > 12) return time - 12 + d.slice(2);
+  return time + d.slice(2);
+};
